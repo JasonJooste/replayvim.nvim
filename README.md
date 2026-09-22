@@ -19,19 +19,19 @@ Neovim >= 0.8.
 **[lazy.nvim](https://github.com/folke/lazy.nvim)**
 
 ```lua
-{ "<your-username>/replayvim.nvim" }
+{ "JasonJooste/replayvim.nvim" }
 ```
 
 **[packer.nvim](https://github.com/wbthomason/packer.nvim)**
 
 ```lua
-use "<your-username>/replayvim.nvim"
+use "JasonJooste/replayvim.nvim"
 ```
 
 **[vim-plug](https://github.com/junegunn/vim-plug)**
 
 ```vim
-Plug '<your-username>/replayvim.nvim'
+Plug 'JasonJooste/replayvim.nvim'
 ```
 
 **Local / no plugin manager**
