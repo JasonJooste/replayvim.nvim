@@ -1,0 +1,111 @@
+*replayvim.txt*   Record every edit to a buffer and replay it from empty
+
+==============================================================================
+CONTENTS                                                    *replayvim-contents*
+
+    1. Introduction ......................... |replayvim-introduction|
+    2. Commands ............................. |replayvim-commands|
+    3. Configuration ........................ |replayvim-configuration|
+    4. Log format ........................... |replayvim-log-format|
+
+==============================================================================
+1. Introduction                                         *replayvim-introduction*
+
+ReplayVim records every edit made to a file as a compact op log stored
+beside it, and can replay that history from an empty buffer, or export it
+as a VHS (https://github.com/charmbracelet/vhs) `.tape` script that renders
+the edit history as a GIF.
+
+Recording starts automatically the first time a file is opened (see
+|replayvim-configuration| to disable this) and is O(1) per keystroke: no
+full-document diffing happens on every change, only at commit points
+(leaving insert mode, or a completed normal-mode change).
+
+The log is written next to the source file as a hidden dotfile, e.g.
+`foo.lua` -> `.foo.lua.replay`.
+
+==============================================================================
+2. Commands                                                 *replayvim-commands*
+
+                                                                  *:ReplayVim*
+:ReplayVim [gap_ms]        Replay this file's edit history in a vertical
+                            split, starting from an empty buffer. `gap_ms`
+                            overrides |g:replayvim| `gap_ms` for this run.
+
+                                                              *:ReplayVimStop*
+:ReplayVimStop              Halt a running replay.
+
+                                                              *:ReplayVimTape*
+:ReplayVimTape [out]        Export this file's history as a VHS `.tape`
+                            script. Defaults to `<file>.tape` next to the
+                            source file.
+
+                                                             *:ReplayVimCheck*
+:ReplayVimCheck              Validate the log for this file and report any
+                            malformed ops, along with epoch/permission
+                            info.
+
+                                                             *:ReplayVimClear*
+:ReplayVimClear              Delete this file's replay log and start a
+                            fresh one, reseeded from the current buffer.
+
+==============================================================================
+3. Configuration                                       *replayvim-configuration*
+
+Set options before the plugin loads with |g:replayvim|: >lua
+
+    vim.g.replayvim = {
+      gap_ms = 20,
+    }
+<
+...or after, with `setup()`: >lua
+
+    require("replayvim").setup {
+      gap_ms = 20,
+    }
+<
+                                                                *g:replayvim*
+Available options and their defaults:
+
+    gap_ms          (number, default: 40)
+                    Milliseconds between ops during |:ReplayVim| replay.
+
+    flush_every     (number, default: 16)
+                    Ops buffered in memory before a write to disk.
+
+    log_suffix      (string, default: ".replay")
+                    Suffix appended to the hidden log file's name.
+
+    auto_attach     (boolean, default: true)
+                    Automatically record every normal file buffer opened.
+                    Set to `false` and call |replayvim.attach()| yourself
+                    to record selectively.
+
+Lua API (`require("replayvim")`):
+
+    attach({bufnr})     Start recording {bufnr} (default: current buffer).
+    replay({gap_ms})    Same as |:ReplayVim|.
+    stop()              Same as |:ReplayVimStop|.
+    tape({outfile}, {opts})   Same as |:ReplayVimTape|.
+    check({bufnr})      Same as |:ReplayVimCheck|.
+    clear({bufnr})      Same as |:ReplayVimClear|.
+
+==============================================================================
+4. Log format                                             *replayvim-log-format*
+
+A header line, then one op per line, tab separated, appended in order: >
+
+    #replayvim	epoch	<unix_seconds>
+    <secs_since_epoch>	<byte_offset>	<bytes_deleted>	<inserted_text_escaped>
+<
+The epoch is when the log was first written to disk; add it to an op's
+seconds to get a Unix time. Byte offsets are 0-based into the whole
+document. Replay = start from `""`, apply ops in order.
+
+Older logs (no header, three fields per op) still load; their ops have no
+timestamp.
+
+The log's permissions mirror the source file's, so a private file doesn't
+leave a world-readable history lying next to it.
+
+vim:tw=78:ts=8:noet:ft=help:norl:
