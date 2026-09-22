@@ -2,13 +2,9 @@
 
 Record every edit to a buffer and replay it from empty.
 
-ReplayVim keeps a compact log of every change you make to a file, stored
-beside it as a hidden dotfile (`foo.lua` -> `.foo.lua.replay`). Recording
-costs O(1) per keystroke — no full-document diffing happens as you type,
-only at commit points (leaving insert mode, or a completed normal-mode
-change). You can then replay that history from an empty buffer, or export
-it as a [VHS](https://github.com/charmbracelet/vhs) `.tape` script that
-renders the whole edit session as a GIF.
+ReplayVim keeps a compact log of every change you make to a file, stored beside it as a hidden dotfile (`foo.lua` -> `.foo.lua.replay`). 
+As a compromise between granularity and space constraints, it makes one entry per edit. 
+You can then replay that history from an empty buffer, or export it as a [VHS](https://github.com/charmbracelet/vhs) `.tape` script to render the session as as a gif or video file.
 
 ## Requirements
 
