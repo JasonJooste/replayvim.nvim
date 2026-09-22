@@ -42,11 +42,16 @@
 --   drift for at most one commit before healing itself.
 --
 -- Commands:
---     :ReplayVim [gap_ms]   replay this file's history in a split
---     :ReplayVimStop        halt a running replay
---     :ReplayVimTape [out]  export the history as a VHS .tape file
---     :ReplayVimCheck       validate the log, report any bad ops
---     :ReplayVimClear       delete this file's log
+--     :ReplayVimStartTracking  start recording this buffer's edits
+--     :ReplayVimStopTracking   stop recording this buffer's edits
+--     :ReplayVim [gap_ms]      replay this file's history in a split
+--     :ReplayVimStop           halt a running replay
+--     :ReplayVimTape [out]     export the history as a VHS .tape file
+--     :ReplayVimCheck          validate the log, report any bad ops
+--     :ReplayVimClear          delete this file's log
+--
+-- Tracking is off by default: nothing is recorded until you run
+-- :ReplayVimStartTracking (or set auto_attach = true, see below).
 --
 -- Config: vim.g.replayvim = { gap_ms = 20 }   (before load)
 --         require("replayvim").setup { gap_ms = 20 }
@@ -60,7 +65,7 @@ local config = {
   gap_ms = 40,      -- ms between ops during replay
   flush_every = 16, -- ops buffered in memory before hitting disk
   log_suffix = ".replay",
-  auto_attach = true,
+  auto_attach = false, -- off by default; opt in with :ReplayVimStartTracking
 }
 for k, v in pairs(vim.g.replayvim or {}) do config[k] = v end
 
@@ -378,6 +383,7 @@ local function detach(bufnr)
     flush(sess, bufnr)
     sessions[bufnr] = nil
   end
+  pcall(api.nvim_del_augroup_by_name, "ReplayVim_" .. bufnr)
 end
 
 function M.attach(bufnr)
@@ -464,6 +470,37 @@ function M.attach(bufnr)
     buffer = bufnr,
     callback = function() detach(bufnr) end,
   })
+end
+
+-- User-facing wrapper around attach(): notifies so an explicit
+-- :ReplayVimStartTracking has visible feedback (M.attach itself stays
+-- silent, since auto_attach calls it on every buffer open).
+function M.start_tracking(bufnr)
+  bufnr = bufnr or api.nvim_get_current_buf()
+  if sessions[bufnr] then
+    vim.notify("ReplayVim: already tracking this buffer", vim.log.levels.WARN)
+    return
+  end
+  M.attach(bufnr)
+  if sessions[bufnr] then
+    vim.notify("ReplayVim: tracking " .. sessions[bufnr].path)
+  else
+    vim.notify(
+      "ReplayVim: couldn't start tracking (no file name, or an unsupported buffer type)",
+      vim.log.levels.WARN)
+  end
+end
+
+function M.stop_tracking(bufnr)
+  bufnr = bufnr or api.nvim_get_current_buf()
+  local sess = sessions[bufnr]
+  if not sess then
+    vim.notify("ReplayVim: not tracking this buffer", vim.log.levels.WARN)
+    return
+  end
+  local path = sess.path
+  detach(bufnr)
+  vim.notify("ReplayVim: stopped tracking " .. path)
 end
 
 --------------------------------------------------------------------------
@@ -854,6 +891,12 @@ end
 --------------------------------------------------------------------------
 -- wiring
 --------------------------------------------------------------------------
+
+api.nvim_create_user_command("ReplayVimStartTracking", function() M.start_tracking() end,
+  { desc = "Start recording this buffer's edits" })
+
+api.nvim_create_user_command("ReplayVimStopTracking", function() M.stop_tracking() end,
+  { desc = "Stop recording this buffer's edits" })
 
 api.nvim_create_user_command("ReplayVim", function(o)
   M.replay(o.args ~= "" and o.args or nil)

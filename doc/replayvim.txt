@@ -16,16 +16,23 @@ beside it, and can replay that history from an empty buffer, or export it
 as a VHS (https://github.com/charmbracelet/vhs) `.tape` script that renders
 the edit history as a GIF.
 
-Recording starts automatically the first time a file is opened (see
-|replayvim-configuration| to disable this) and is O(1) per keystroke: no
-full-document diffing happens on every change, only at commit points
-(leaving insert mode, or a completed normal-mode change).
+Tracking is off by default: nothing is recorded until you run
+|:ReplayVimStartTracking| on a buffer, or set |g:replayvim| `auto_attach`
+to record every file automatically. Recording itself is O(1) per
+keystroke: no full-document diffing happens on every change, only at
+commit points (leaving insert mode, or a completed normal-mode change).
 
 The log is written next to the source file as a hidden dotfile, e.g.
 `foo.lua` -> `.foo.lua.replay`.
 
 ==============================================================================
 2. Commands                                                 *replayvim-commands*
+
+                                                       *:ReplayVimStartTracking*
+:ReplayVimStartTracking      Start recording edits to the current buffer.
+
+                                                        *:ReplayVimStopTracking*
+:ReplayVimStopTracking       Stop recording edits to the current buffer.
 
                                                                   *:ReplayVim*
 :ReplayVim [gap_ms]        Replay this file's edit history in a vertical
@@ -76,14 +83,18 @@ Available options and their defaults:
     log_suffix      (string, default: ".replay")
                     Suffix appended to the hidden log file's name.
 
-    auto_attach     (boolean, default: true)
-                    Automatically record every normal file buffer opened.
-                    Set to `false` and call |replayvim.attach()| yourself
-                    to record selectively.
+    auto_attach     (boolean, default: false)
+                    Automatically start recording every normal file buffer
+                    opened, instead of waiting for
+                    |:ReplayVimStartTracking|.
 
 Lua API (`require("replayvim")`):
 
-    attach({bufnr})     Start recording {bufnr} (default: current buffer).
+    start_tracking({bufnr})  Same as |:ReplayVimStartTracking|.
+    stop_tracking({bufnr})   Same as |:ReplayVimStopTracking|.
+    attach({bufnr})     Start recording {bufnr} (default: current buffer),
+                        silently; used internally by `auto_attach` and by
+                        `start_tracking()`.
     replay({gap_ms})    Same as |:ReplayVim|.
     stop()              Same as |:ReplayVimStop|.
     tape({outfile}, {opts})   Same as |:ReplayVimTape|.

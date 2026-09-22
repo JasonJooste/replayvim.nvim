@@ -39,22 +39,28 @@ a native package location:
 ln -s /path/to/this/repo ~/.local/share/nvim/site/pack/plugins/start/replayvim.nvim
 ```
 
-No `setup()` call is required — ReplayVim starts recording every normal
-file buffer as soon as it loads. Call `setup()` only if you want to
-override a default:
+Tracking is **off by default** — nothing is recorded until you ask for
+it. No `setup()` call is required; call it only if you want to override a
+default:
 
 ```lua
 require("replayvim").setup {
-  gap_ms = 20, -- ms between ops during replay
+  gap_ms = 20,       -- ms between ops during replay
+  auto_attach = true, -- record every file buffer automatically, instead
+                       -- of opting in per-buffer with :ReplayVimStartTracking
 }
 ```
 
 ## Usage
 
-Just edit files normally; recording happens in the background.
+Run `:ReplayVimStartTracking` in a buffer to start recording it; edit
+normally after that. Recording stops on its own when the buffer closes, or
+on `:ReplayVimStopTracking`.
 
 | Command | Effect |
 |---|---|
+| `:ReplayVimStartTracking` | Start recording this buffer's edits |
+| `:ReplayVimStopTracking` | Stop recording this buffer's edits |
 | `:ReplayVim [gap_ms]` | Replay this file's history in a split, from empty |
 | `:ReplayVimStop` | Halt a running replay |
 | `:ReplayVimTape [out]` | Export the history as a VHS `.tape` file |
